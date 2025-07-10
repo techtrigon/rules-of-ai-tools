@@ -1,0 +1,20 @@
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[user]
+	name = Dev Vikram
+	email = harleysam12@gmail.com
+[alias]
+	fp = "!sh -c '\nbranch=$(git symbolic-ref --quiet --short HEAD)\nif [ -z \"$branch\" ]; then\n  branch=$(git rev-parse --abbrev-ref HEAD)\nfi\ncanonical_branch=$(echo \"$branch\" | tr \"[:upper:]\" \"[:lower:]\")\nif [ \"$canonical_branch\" = \"main\" ]; then\n  echo \"❌ Force pushing to MAIN is not allowed. Aborting.\"\n  exit 1\nfi\necho \"🚀 Force pushing to '$branch'...\"\ngit push origin \"$branch\" --force\n'"
+	st = "!f() { \\\n  if ! git diff --quiet || ! git diff --cached --quiet || [ -n \"$(git ls-files --others --exclude-standard)\" ]; then \\\n    timestamp=$(date \"+%d-%b-%Y %H:%M:%S\"); \\\n    branch=$(git rev-parse --abbrev-ref HEAD); \\\n    git stash push -u -m \"[  $branch   ]  .___.  [  $timestamp  ]\" || { echo \"Stash failed\"; exit 1; }; \\\n    echo \"Changes stashed: [$branch @ $timestamp]\"; \\\n  else \\\n    echo \"Nothing to stash.\"; \\\n  fi; \\\n}; f"
+	u = reset --soft HEAD~1
+	a = commit --amend --no-edit
+	sra = "!f() { \\\n  if ! git diff --quiet || ! git diff --cached --quiet || [ -n \"$(git ls-files --others --exclude-standard)\" ]; then \\\n    timestamp=$(date \"+%d-%b-%Y %H:%M:%S\"); \\\n    branch=$(git rev-parse --abbrev-ref HEAD); \\\n    git stash push -u -m \"[  $branch   ]  .___.  [  $timestamp  ] \" || { echo \"Stash failed\"; exit 1; }; \\\n    stash_created=1; \\\n  else \\\n    stash_created=0; \\\n  fi; \\\n  git fetch origin main || { echo \"Fetch failed\"; exit 1; }; \\\n  if ! git rebase origin/main; then \\\n    echo \"⚠️ Rebase conflict.\"; \\\n    editor=$(git config --get core.editor | awk \"{print \\\\$1}\"); \\\n    if [ -n \"$editor\" ]; then echo \"Opening $editor ...\"; $editor . || echo \"❌ Failed to open $editor\"; fi; \\\n    exit 1; \\\n  fi; \\\n  if [ $stash_created -eq 1 ]; then \\\n    git stash apply stash@{0} || echo \"Warning: Conflicts during stash apply. Resolve manually.\"; \\\n  fi; \\\n}; f"
+	reset-hard = "!f() { branch=$(git rev-parse --abbrev-ref HEAD); if ! git diff --quiet || ! git diff --cached --quiet || [ -n \"$(git ls-files --others --exclude-standard)\" ]; then timestamp=$(date \"+%d-%b-%Y %H:%M:%S\"); git stash push -u -m \"[  $branch   ]  .___.  [  $timestamp  ] \" || { echo \"Stash failed\"; exit 1; }; stash_created=1; else stash_created=0; fi; git fetch origin $branch || { echo \"Fetch failed\"; exit 1; }; git reset --hard origin/$branch || { echo \"Reset failed\"; exit 1; }; if [ $stash_created -eq 1 ]; then git stash apply stash@{0} || echo \"Warning: Conflicts during stash apply. Resolve manually.\"; fi; }; f"
+	co = "!f() { git checkout -b \"$1\" origin/main; }; f"
+	ir = "!f() { git rebase -i HEAD~${1:-1}; }; f"
+	r = "!f() { git fetch origin && git rebase origin/\"${1:-main}\"; }; f"
+	ab = rebase --abort || merge --abort
+	cnv = "!f() { \\\n  if [ $# -eq 0 ]; then \\\n    git commit --no-verify -m \"⚠️ STASHED COMMIT🧪\"; \\\n  else \\\n    git commit --no-verify -m \"$*\"; \\\n  fi; \\\n}"
